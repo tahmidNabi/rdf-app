@@ -1,0 +1,6 @@
+.*
+!.gitignore
+*.iml
+*.ipr
+target
+data
