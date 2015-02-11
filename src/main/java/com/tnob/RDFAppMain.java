@@ -5,8 +5,7 @@ import com.hp.hpl.jena.util.FileManager;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Hello world!
@@ -47,6 +46,7 @@ public class RDFAppMain {
         StmtIterator iterator = model.listStatements();
         Map<String, Integer> predicates = new LinkedHashMap<String, Integer>();
         Map<String, Integer> subjects = new LinkedHashMap<String, Integer>();
+        Map<String, Set<String>> subjectPredicates = new LinkedHashMap<String, Set<String>>();
 
         while (iterator.hasNext()) {
             Statement stmt = iterator.nextStatement();
@@ -58,12 +58,30 @@ public class RDFAppMain {
             predicates.merge(predicate, 1, (oldValue, one) -> oldValue + one);
             subjects.merge(subject, 1, (oldValue, one) -> oldValue + one);
 
-            printRDFStatement(stmt);
+            if(subjectPredicates.containsKey(subject)) {
+                Set<String> predicateList = subjectPredicates.get(subject) == null ? new LinkedHashSet<>() : subjectPredicates.get(subject);
+                predicateList.add(predicate);
+            } else {
+                Set<String> predicateList = new LinkedHashSet<>();
+                predicateList.add(predicate);
+                subjectPredicates.put(subject, predicateList);
+            }
+
+            //printRDFStatement(stmt);
         }
 /*        for (String predicate : predicates) {
             System.out.println(predicate);
         }*/
         //subjects.forEach((k, v) -> System.out.println(k + "=" + v));
+        predicates.forEach((k, v) -> System.out.println(k + "=" + v));
+
+        for (String subject : subjectPredicates.keySet()) {
+            System.out.println("Subject: " + subject);
+            for (String predicate : subjectPredicates.get(subject)) {
+                System.out.println("\t\t Predicate: " + predicate);
+            }
+            System.out.println("\n");
+        }
     }
 
     private static void printRDFStatement(Statement stmt) {
