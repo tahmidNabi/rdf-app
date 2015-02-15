@@ -12,7 +12,7 @@ import java.util.*;
  */
 public class RDFAppMain {
 
-    public static final String inputRDFFile = "imdb.rdf";
+    public static final String inputRDFFile = "all";
 
 
     public static void main(String[] args) {
@@ -36,7 +36,14 @@ public class RDFAppMain {
                 .addProperty(VCARD.Family, familyName));*/
 
         model.read(new InputStreamReader(in1), "");
-        iterateRDFModel(model);
+
+        /*RDFModelIterator rdfModelIteratorPrinter = new RDFModelIteratorPrinter(model);
+        rdfModelIteratorPrinter.iterateRDFModel();
+        */
+
+        RDFModelIterator rdfModelIteratorPrinter = new LinkedMDBRDFModelIterator(model);
+        rdfModelIteratorPrinter.iterateRDFModel();
+        //iterateRDFModel(model);
 
 
         //model.write(System.out, "N-TRIPLES");
@@ -67,7 +74,6 @@ public class RDFAppMain {
                 subjectPredicates.put(subject, predicateList);
             }
 
-            //printRDFStatement(stmt);
         }
 /*        for (String predicate : predicates) {
             System.out.println(predicate);
@@ -84,19 +90,5 @@ public class RDFAppMain {
         }
     }
 
-    private static void printRDFStatement(Statement stmt) {
-        Resource subject = stmt.getSubject();
-        Property predicate = stmt.getPredicate();
-        RDFNode object = stmt.getObject();
 
-
-        System.out.println("Subject: " + subject.toString());
-        System.out.println("Predicate: " + predicate.toString());
-        if (object instanceof Resource) {
-            System.out.println("Resource Object: " + object.toString());
-        } else {
-            System.out.println("Literal Object: " + "\"" + object.toString() + "\"");
-        }
-        System.out.println("\n");
-    }
 }
