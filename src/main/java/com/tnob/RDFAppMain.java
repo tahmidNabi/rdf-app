@@ -1,6 +1,9 @@
 package com.tnob;
 
-import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.util.FileManager;
 import com.tnob.mapper.QueryGenerator;
 
@@ -8,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,9 +22,10 @@ import java.util.*;
  */
 public class RDFAppMain {
 
-    public static final String inputRDFFile = "film";
+    //public static final String inputRDFFile = "actor";
     public static final String prefix = "http://data.linkedmdb.org/resource/movie";
     public static final String QUERY_FOLDER = "generated-queries/";
+    public static final String INPUT_FOLDER = "linkedmdb-root/";
 
 
     public static void main(String[] args) {
@@ -29,12 +34,27 @@ public class RDFAppMain {
         String familyName = "Smith";
         String fullName = givenName + " " + familyName;
 
-        Model model = ModelFactory.createDefaultModel();
+        List<String> rdfFiles = new ArrayList<>();
 
-        InputStream in1 = FileManager.get().open(inputRDFFile);
-        if (in1 == null) {
-            throw new IllegalArgumentException("File: " + inputRDFFile + " not found");
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(INPUT_FOLDER))) {
+            for (Path path : directoryStream) {
+                rdfFiles.add(path.getFileName().toString());
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
+
+        rdfFiles.forEach(e -> {
+            System.out.println(e);});
+
+        for (String inputRDFFile: rdfFiles) {
+
+            Model model = ModelFactory.createDefaultModel();
+
+            InputStream in1 = FileManager.get().open(INPUT_FOLDER + inputRDFFile);
+            if (in1 == null) {
+                throw new IllegalArgumentException("File: " + inputRDFFile + " not found");
+            }
 
 /*        Resource johnSmith = model.createResource(personURI)
                 .addProperty(VCARD.FN, fullName)
@@ -43,7 +63,7 @@ public class RDFAppMain {
                 .addProperty(VCARD.Given, givenName)
                 .addProperty(VCARD.Family, familyName));*/
 
-        model.read(new InputStreamReader(in1), "");
+            model.read(new InputStreamReader(in1), "");
 
         /*RDFModelIterator rdfModelIteratorPrinter = new RDFModelIteratorPrinter(model);
         rdfModelIteratorPrinter.iterateRDFModel();
@@ -51,24 +71,27 @@ public class RDFAppMain {
         /*RDFModelIterator rdfModelIteratorPrinter = new LinkedMDBRDFResourceFetcher(model);
         rdfModelIteratorPrinter.iterateRDFModel();*/
 
-        RDFMapper rdfModelIterator = new RDFMapper(model);
-        rdfModelIterator.iterateRDFModel();
-        //rdfModelIterator.printNode();
-        //iterateRDFModel(model);
-        rdfModelIterator.printNode();
+            RDFMapper rdfModelIterator = new RDFMapper(model);
+            rdfModelIterator.iterateRDFModel();
+            //rdfModelIterator.printNode();
+            //iterateRDFModel(model);
+            //rdfModelIterator.printNode();
 
-        Map<String, Map<String, String>> nodeAttributeMap = rdfModelIterator.getNodeAttributeMap();
+            Map<String, Map<String, String>> nodeAttributeMap = rdfModelIterator.getNodeAttributeMap();
 
-        List<String> insertQueries = QueryGenerator.generateInsertQueries(nodeAttributeMap);
+            List<String> insertQueries = QueryGenerator.generateInsertQueries(nodeAttributeMap);
+            writeQueriesToFile(insertQueries, inputRDFFile);
+            Neo4jDao.batchInsert(insertQueries, inputRDFFile);
+        }
 
-        writeQueriesToFile(insertQueries);
-        Neo4jDao.batchInsert(insertQueries);
+        //writeQueriesToFile(insertQueries);
+        //Neo4jDao.batchInsert(insertQueries);
 
 
         //model.write(System.out, "N-TRIPLES");
     }
 
-    private static void writeQueriesToFile(List<String> insertQueries) {
+    private static void writeQueriesToFile(List<String> insertQueries, String inputRDFFile) {
         Path queryFile = Paths.get(QUERY_FOLDER + inputRDFFile + "-cypher.txt");
         try {
             Files.write(queryFile, insertQueries, Charset.defaultCharset());
@@ -93,7 +116,7 @@ public class RDFAppMain {
             predicates.merge(predicate, 1, (oldValue, one) -> oldValue + one);
             subjects.merge(subject, 1, (oldValue, one) -> oldValue + one);
 
-            if(subjectPredicates.containsKey(subject)) {
+            if (subjectPredicates.containsKey(subject)) {
                 Set<String> predicateList = subjectPredicates.get(subject) == null ? new LinkedHashSet<>() : subjectPredicates.get(subject);
                 predicateList.add(predicate);
             } else {

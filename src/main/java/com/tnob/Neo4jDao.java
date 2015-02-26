@@ -17,7 +17,7 @@ public class Neo4jDao {
 
     public static final String REST_URI = "http://localhost:7474/db/data";
 
-    public static void batchInsert(List<String> insertQueries) {
+    public static void batchInsert(List<String> insertQueries, String rdfFileName) {
         RestAPI graphDb = new RestAPIFacade(REST_URI);
 
         QueryEngine engine = new RestCypherQueryEngine(graphDb);
@@ -28,7 +28,7 @@ public class Neo4jDao {
                 System.out.println("Inserted");
             }
         }
-        System.out.println("Inserted " + insertQueries.size() + "nodes");
+        System.out.println("Inserted " + insertQueries.size() + "nodes of " + rdfFileName);
         graphDb.close();
         System.out.println("Closed");
     }
