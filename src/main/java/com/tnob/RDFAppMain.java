@@ -2,6 +2,11 @@ package com.tnob;
 
 import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.util.FileManager;
+import com.hp.hpl.jena.util.ResourceUtils;
+import com.hp.hpl.jena.vocabulary.RDF;
+import com.tnob.mapper.QueryGenerator;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -12,7 +17,8 @@ import java.util.*;
  */
 public class RDFAppMain {
 
-    public static final String inputRDFFile = "all";
+    public static final String inputRDFFile = "film";
+    public static final String prefix = "http://data.linkedmdb.org/resource/movie";
 
 
     public static void main(String[] args) {
@@ -39,11 +45,20 @@ public class RDFAppMain {
 
         /*RDFModelIterator rdfModelIteratorPrinter = new RDFModelIteratorPrinter(model);
         rdfModelIteratorPrinter.iterateRDFModel();
-        */
 
-        RDFModelIterator rdfModelIteratorPrinter = new LinkedMDBRDFModelIterator(model);
-        rdfModelIteratorPrinter.iterateRDFModel();
+        /*RDFModelIterator rdfModelIteratorPrinter = new LinkedMDBRDFResourceFetcher(model);
+        rdfModelIteratorPrinter.iterateRDFModel();*/
+
+        RDFMapper rdfModelIterator = new RDFMapper(model);
+        rdfModelIterator.iterateRDFModel();
+        //rdfModelIterator.printNode();
         //iterateRDFModel(model);
+        rdfModelIterator.printNode();
+
+        Map<String, Map<String, String>> nodeAttributeMap = rdfModelIterator.getNodeAttributeMap();
+
+        List<String> insertQueries = QueryGenerator.generateInsertQueries(nodeAttributeMap);
+        Neo4jDao.batchInsert(insertQueries);
 
 
         //model.write(System.out, "N-TRIPLES");

@@ -30,7 +30,7 @@ public class LinkedMDBRDFModelIterator extends RDFModelIterator {
 
                 DataFetcher dataFetcher = new DataFetcher();
                 dataFetcher.fetchDataUsingWget(resourceURL);
-                
+
             }
         }
     }
