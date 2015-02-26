@@ -2,14 +2,15 @@ package com.tnob;
 
 import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.util.FileManager;
-import com.hp.hpl.jena.util.ResourceUtils;
-import com.hp.hpl.jena.vocabulary.RDF;
 import com.tnob.mapper.QueryGenerator;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -19,6 +20,7 @@ public class RDFAppMain {
 
     public static final String inputRDFFile = "film";
     public static final String prefix = "http://data.linkedmdb.org/resource/movie";
+    public static final String QUERY_FOLDER = "generated-queries/";
 
 
     public static void main(String[] args) {
@@ -58,10 +60,21 @@ public class RDFAppMain {
         Map<String, Map<String, String>> nodeAttributeMap = rdfModelIterator.getNodeAttributeMap();
 
         List<String> insertQueries = QueryGenerator.generateInsertQueries(nodeAttributeMap);
+
+        writeQueriesToFile(insertQueries);
         Neo4jDao.batchInsert(insertQueries);
 
 
         //model.write(System.out, "N-TRIPLES");
+    }
+
+    private static void writeQueriesToFile(List<String> insertQueries) {
+        Path queryFile = Paths.get(QUERY_FOLDER + inputRDFFile + "-cypher.txt");
+        try {
+            Files.write(queryFile, insertQueries, Charset.defaultCharset());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void iterateRDFModel(Model model) {
