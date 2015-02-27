@@ -9,7 +9,7 @@ import java.util.*;
 /**
  * Created by tahmid on 2/24/15.
  */
-public class RDFMapper extends RDFModelIterator{
+public class RDFNodeMapper extends RDFModelIterator{
 
 
     public static final String rdfPrefix = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
@@ -20,7 +20,7 @@ public class RDFMapper extends RDFModelIterator{
     private GraphDatabaseService db;
     private Map<String, Map<String, String>> nodeAttributeMap;
 
-    public RDFMapper(Model model) {
+    public RDFNodeMapper(Model model) {
         super(model);
         nodeAttributeMap = new HashMap<>();
     }

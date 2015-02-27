@@ -25,7 +25,6 @@ public class Neo4jDao {
         for (String insertQuery: insertQueries) {
             if (!insertQuery.equals("")) {
                 engine.query(insertQuery, Collections.EMPTY_MAP);
-                System.out.println("Inserted");
             }
         }
         System.out.println("Inserted " + insertQueries.size() + "nodes of " + rdfFileName);

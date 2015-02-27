@@ -22,18 +22,12 @@ import java.util.*;
  */
 public class RDFAppMain {
 
-    //public static final String inputRDFFile = "actor";
     public static final String prefix = "http://data.linkedmdb.org/resource/movie";
     public static final String QUERY_FOLDER = "generated-queries/";
     public static final String INPUT_FOLDER = "linkedmdb-root/";
 
 
     public static void main(String[] args) {
-        String personURI = "http://somewhere/JohnSmith";
-        String givenName = "John";
-        String familyName = "Smith";
-        String fullName = givenName + " " + familyName;
-
         List<String> rdfFiles = new ArrayList<>();
 
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(INPUT_FOLDER))) {
@@ -44,10 +38,13 @@ public class RDFAppMain {
             throw new RuntimeException(ex);
         }
 
-        rdfFiles.forEach(e -> {
-            System.out.println(e);});
+        long startTime = System.currentTimeMillis();
 
-        for (String inputRDFFile: rdfFiles) {
+        rdfFiles.forEach(e -> {
+            System.out.println(e);
+        });
+
+        for (String inputRDFFile : rdfFiles) {
 
             Model model = ModelFactory.createDefaultModel();
 
@@ -55,13 +52,6 @@ public class RDFAppMain {
             if (in1 == null) {
                 throw new IllegalArgumentException("File: " + inputRDFFile + " not found");
             }
-
-/*        Resource johnSmith = model.createResource(personURI)
-                .addProperty(VCARD.FN, fullName)
-                .addProperty(VCARD.N,
-                        model.createResource()
-                .addProperty(VCARD.Given, givenName)
-                .addProperty(VCARD.Family, familyName));*/
 
             model.read(new InputStreamReader(in1), "");
 
@@ -71,7 +61,7 @@ public class RDFAppMain {
         /*RDFModelIterator rdfModelIteratorPrinter = new LinkedMDBRDFResourceFetcher(model);
         rdfModelIteratorPrinter.iterateRDFModel();*/
 
-            RDFMapper rdfModelIterator = new RDFMapper(model);
+            RDFNodeMapper rdfModelIterator = new RDFNodeMapper(model);
             rdfModelIterator.iterateRDFModel();
             //rdfModelIterator.printNode();
             //iterateRDFModel(model);
@@ -83,12 +73,11 @@ public class RDFAppMain {
             writeQueriesToFile(insertQueries, inputRDFFile);
             Neo4jDao.batchInsert(insertQueries, inputRDFFile);
         }
+        long endTime = System.currentTimeMillis();
 
-        //writeQueriesToFile(insertQueries);
-        //Neo4jDao.batchInsert(insertQueries);
+        long timeForInsertion = (endTime - startTime)/1000;
 
-
-        //model.write(System.out, "N-TRIPLES");
+        System.out.println("Migration took " + timeForInsertion + " seconds");
     }
 
     private static void writeQueriesToFile(List<String> insertQueries, String inputRDFFile) {
