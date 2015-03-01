@@ -2,8 +2,6 @@ package com.tnob;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
 import com.hp.hpl.jena.util.FileManager;
 import com.tnob.mapper.QueryGenerator;
 
@@ -24,13 +22,18 @@ public class RDFAppMain {
 
     public static final String prefix = "http://data.linkedmdb.org/resource/movie";
     public static final String QUERY_FOLDER = "generated-queries/";
-    public static final String INPUT_FOLDER = "linkedmdb-root/";
+    public static final String INPUT_FOLDER_ROOT = "linkedmdb-root/";
+    public static final String INPUT_FOLDER_RELATIONS = "film-rdf/";
 
 
     public static void main(String[] args) {
+        migrateRootNodes(INPUT_FOLDER_ROOT);
+    }
+
+    private static void migrateRootNodes(String inputFolder) {
         List<String> rdfFiles = new ArrayList<>();
 
-        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(INPUT_FOLDER))) {
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(inputFolder))) {
             for (Path path : directoryStream) {
                 rdfFiles.add(path.getFileName().toString());
             }
@@ -48,7 +51,7 @@ public class RDFAppMain {
 
             Model model = ModelFactory.createDefaultModel();
 
-            InputStream in1 = FileManager.get().open(INPUT_FOLDER + inputRDFFile);
+            InputStream in1 = FileManager.get().open(INPUT_FOLDER_ROOT + inputRDFFile);
             if (in1 == null) {
                 throw new IllegalArgumentException("File: " + inputRDFFile + " not found");
             }
@@ -88,47 +91,4 @@ public class RDFAppMain {
             throw new RuntimeException(e);
         }
     }
-
-    private static void iterateRDFModel(Model model) {
-        StmtIterator iterator = model.listStatements();
-        Map<String, Integer> predicates = new LinkedHashMap<String, Integer>();
-        Map<String, Integer> subjects = new LinkedHashMap<String, Integer>();
-        Map<String, Set<String>> subjectPredicates = new LinkedHashMap<String, Set<String>>();
-
-        while (iterator.hasNext()) {
-            Statement stmt = iterator.nextStatement();
-            //subjects.add(stmt.getSubject().toString());
-            //predicates.add(stmt.getPredicate().toString());
-            String subject = stmt.getSubject().toString();
-            String predicate = stmt.getPredicate().toString();
-
-            predicates.merge(predicate, 1, (oldValue, one) -> oldValue + one);
-            subjects.merge(subject, 1, (oldValue, one) -> oldValue + one);
-
-            if (subjectPredicates.containsKey(subject)) {
-                Set<String> predicateList = subjectPredicates.get(subject) == null ? new LinkedHashSet<>() : subjectPredicates.get(subject);
-                predicateList.add(predicate);
-            } else {
-                Set<String> predicateList = new LinkedHashSet<>();
-                predicateList.add(predicate);
-                subjectPredicates.put(subject, predicateList);
-            }
-
-        }
-/*        for (String predicate : predicates) {
-            System.out.println(predicate);
-        }*/
-        //subjects.forEach((k, v) -> System.out.println(k + "=" + v));
-        predicates.forEach((k, v) -> System.out.println(k + "=" + v));
-
-        for (String subject : subjectPredicates.keySet()) {
-            System.out.println("Subject: " + subject);
-            for (String predicate : subjectPredicates.get(subject)) {
-                System.out.println("\t\t Predicate: " + predicate);
-            }
-            System.out.println("\n");
-        }
-    }
-
-
 }
