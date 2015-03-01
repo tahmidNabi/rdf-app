@@ -43,10 +43,6 @@ public class RDFAppMain {
 
         long startTime = System.currentTimeMillis();
 
-        rdfFiles.forEach(e -> {
-            System.out.println(e);
-        });
-
         for (String inputRDFFile : rdfFiles) {
 
             Model model = ModelFactory.createDefaultModel();
