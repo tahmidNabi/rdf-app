@@ -27,7 +27,8 @@ public class RDFAppMain {
 
 
     public static void main(String[] args) {
-        migrateRootNodes(INPUT_FOLDER_ROOT);
+        //migrateRootNodes(INPUT_FOLDER_ROOT);
+        migrateRelations(INPUT_FOLDER_RELATIONS);
     }
 
     private static void migrateRootNodes(String inputFolder) {
@@ -47,7 +48,7 @@ public class RDFAppMain {
 
             Model model = ModelFactory.createDefaultModel();
 
-            InputStream in1 = FileManager.get().open(INPUT_FOLDER_ROOT + inputRDFFile);
+            InputStream in1 = FileManager.get().open(inputFolder + inputRDFFile);
             if (in1 == null) {
                 throw new IllegalArgumentException("File: " + inputRDFFile + " not found");
             }
@@ -71,6 +72,57 @@ public class RDFAppMain {
             List<String> insertQueries = QueryGenerator.generateInsertQueries(nodeAttributeMap);
             writeQueriesToFile(insertQueries, inputRDFFile);
             Neo4jDao.batchInsert(insertQueries, inputRDFFile);
+        }
+        long endTime = System.currentTimeMillis();
+
+        long timeForInsertion = (endTime - startTime)/1000;
+
+        System.out.println("Migration took " + timeForInsertion + " seconds");
+    }
+
+    private static void migrateRelations(String inputFolder) {
+        List<String> rdfFiles = new ArrayList<>();
+
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(inputFolder))) {
+            for (Path path : directoryStream) {
+                rdfFiles.add(path.getFileName().toString());
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        for (String inputRDFFile : rdfFiles) {
+
+            Model model = ModelFactory.createDefaultModel();
+
+            InputStream in1 = FileManager.get().open(inputFolder + inputRDFFile);
+            if (in1 == null) {
+                throw new IllegalArgumentException("File: " + inputRDFFile + " not found");
+            }
+
+            model.read(new InputStreamReader(in1), "");
+
+        /*RDFModelIterator rdfModelIteratorPrinter = new RDFModelIteratorPrinter(model);
+        rdfModelIteratorPrinter.iterateRDFModel();
+
+        /*RDFModelIterator rdfModelIteratorPrinter = new LinkedMDBRDFResourceFetcher(model);
+        rdfModelIteratorPrinter.iterateRDFModel();*/
+
+            RDFNodeRelMapper rdfModelIterator = new RDFNodeRelMapper(model);
+            rdfModelIterator.iterateRDFModel();
+            //rdfModelIterator.printNode();
+            //iterateRDFModel(model);
+            //rdfModelIterator.printNode();
+
+            Map<String, Map<String, String>> nodeRelationMap = rdfModelIterator.getNodeRelationMap();
+            Map<String, Map<String, String>> nodeAttributesMap = rdfModelIterator.getNodeAttributeMap();
+
+
+            List<String> relationQueries = QueryGenerator.generateQueriesForRelation(nodeRelationMap, nodeAttributesMap);
+            writeQueriesToFile(relationQueries, inputRDFFile);
+            Neo4jDao.batchInsert(relationQueries, inputRDFFile);
         }
         long endTime = System.currentTimeMillis();
 

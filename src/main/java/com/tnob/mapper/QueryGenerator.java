@@ -1,8 +1,6 @@
 package com.tnob.mapper;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by tahmid on 2/25/15.
@@ -18,10 +16,10 @@ public class QueryGenerator {
         StringBuilder queryBuilder = new StringBuilder("CREATE (node:");
 
         String resourceURI = nodeAttributes.getKey();
-        Map <String, String> attributesMap = nodeAttributes.getValue();
+        Map<String, String> attributesMap = nodeAttributes.getValue();
 
         String nodeType = attributesMap.remove(RDFConstants.TYPE);
-        if (nodeType!= null) {
+        if (nodeType != null) {
             //String label = attributesMap.remove(RDFConstants.LABEL);
 
             queryBuilder.append(nodeType)
@@ -57,10 +55,14 @@ public class QueryGenerator {
         return "\"" + attributeValue + "\"";
     }
 
+    private static String addTicks(String relationshipName) {
+        return "`" + relationshipName + "`";
+    }
+
     private static String removeSpecialSubStrings(String attributeValue) {
         String[] specialSubStrings = {"http://", "https://"};
         for (String specialSubString : specialSubStrings) {
-            if(attributeValue.contains(specialSubString)) {
+            if (attributeValue.contains(specialSubString)) {
                 attributeValue = attributeValue.replaceAll(specialSubString, "");
             }
         }
@@ -75,4 +77,93 @@ public class QueryGenerator {
         }
         return insertQueries;
     }
+
+    /**
+     * match (node1:film{URI:"http://data.linkedmdb.org/resource/film/2"}), (node2{URI:"http://data.linkedmdb.org/resource/film_cut/734"}) create (node1)-[r:film_cut]->(node2) return r;
+     * Match (node1:film{URI:"http://data.linkedmdb.org/resource/film/2399"}) set node1.`http://data.linkedmdb.org/resource/movie/initial_release_date` = "1991-09-11"  return node1
+     *
+     * @param relations
+     * @return
+     */
+
+    public static List<String> generateQueryForRelationAndAttributes(Map.Entry<String, Map<String, String>> relations,
+                                                                     Map<String, String> attributesMap) {
+
+        String resourceURI = relations.getKey();
+        Map<String, String> relationsMap = relations.getValue();
+
+
+        String nodeType = relationsMap.remove(RDFConstants.TYPE);
+        if (nodeType != null) {
+            List<String> updateQueries = new ArrayList<>();
+
+            for (String relationName : relationsMap.keySet()) {
+                updateQueries.add(generateRelationQuery(resourceURI, relationsMap, nodeType, relationName));
+            }
+
+            StringBuilder queryBuilder = new StringBuilder("Match (node1:");
+
+            //generate portion for finding source node (i.e. the node from which the edge goes out)
+            queryBuilder.append(nodeType)
+                    .append("{")
+                    .append(RDFConstants.URI)
+                    .append(":")
+                    .append(addQuotes(resourceURI))
+                    .append("})")
+                    .append(" set ");
+
+            for (String attributeName : attributesMap.keySet()) {
+                queryBuilder.append("node1.")
+                        .append(addTicks(attributeName))
+                        .append(" = ")
+                        .append(addQuotes(removeSpecialSubStrings(attributesMap.get(attributeName))))
+                        .append(" , ");
+            }
+            String attributeUpdateQuery = queryBuilder.toString();
+            attributeUpdateQuery = attributeUpdateQuery.substring(0, attributeUpdateQuery.length() - 2);
+
+            System.out.println(attributeUpdateQuery);
+
+            updateQueries.add(attributeUpdateQuery);
+            return updateQueries;
+
+        } else
+            return Collections.EMPTY_LIST;
+    }
+
+    private static String generateRelationQuery(String resourceURI, Map<String, String> relationsMap, String nodeType, String relationName) {
+        StringBuilder queryBuilder = new StringBuilder("Match (node1:");
+
+        //generate portion for finding source node (i.e. the node from which the edge goes out)
+        queryBuilder.append(nodeType)
+                .append("{")
+                .append(RDFConstants.URI)
+                .append(":")
+                .append(addQuotes(resourceURI))
+                .append("})");
+        //generate portion for finding sink node (i.e. the node in which the edge goes into)
+        queryBuilder.append(", (node2{")
+                .append(RDFConstants.URI)
+                .append(":")
+                .append(addQuotes(relationsMap.get(relationName)))
+                .append("})");
+        //generate the actual relation creation query
+        queryBuilder.append(" create (node1)-[r:")
+                .append(addTicks(relationName))
+                .append("]->(node2)")
+                .append(" return r;");
+        System.out.println(queryBuilder.toString());
+        return queryBuilder.toString();
+    }
+
+    public static List<String> generateQueriesForRelation(Map<String, Map<String, String>> nodeRelationMap, Map<String, Map<String, String>> nodeAttributeMap) {
+        List <String> relationAdditionQueryList = new ArrayList<>();
+        for (Map.Entry<String, Map<String, String>> nodeRelationMapEntry : nodeRelationMap.entrySet()) {
+            Map<String, String> attributesMap = nodeAttributeMap.get(nodeRelationMapEntry.getKey());
+            relationAdditionQueryList.addAll(generateQueryForRelationAndAttributes(nodeRelationMapEntry, attributesMap));
+        }
+        return relationAdditionQueryList;
+    }
+
+
 }
