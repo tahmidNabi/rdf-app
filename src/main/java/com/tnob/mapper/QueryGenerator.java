@@ -122,7 +122,6 @@ public class QueryGenerator {
             String attributeUpdateQuery = queryBuilder.toString();
             attributeUpdateQuery = attributeUpdateQuery.substring(0, attributeUpdateQuery.length() - 2);
 
-            System.out.println(attributeUpdateQuery);
 
             updateQueries.add(attributeUpdateQuery);
             return updateQueries;
@@ -152,7 +151,6 @@ public class QueryGenerator {
                 .append(addTicks(relationName))
                 .append("]->(node2)")
                 .append(" return r;");
-        System.out.println(queryBuilder.toString());
         return queryBuilder.toString();
     }
 

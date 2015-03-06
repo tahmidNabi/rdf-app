@@ -24,10 +24,12 @@ public class RDFAppMain {
     public static final String QUERY_FOLDER = "generated-queries/";
     public static final String INPUT_FOLDER_ROOT = "linkedmdb-root/";
     public static final String INPUT_FOLDER_RELATIONS = "film-rdf/";
+    public static final int PARTITION = 1;
+    public static final int PARTITION_UNIT = 10;
 
 
     public static void main(String[] args) {
-        //migrateRootNodes(INPUT_FOLDER_ROOT);
+        migrateRootNodes(INPUT_FOLDER_ROOT);
         migrateRelations(INPUT_FOLDER_RELATIONS);
     }
 
@@ -71,6 +73,10 @@ public class RDFAppMain {
 
             List<String> insertQueries = QueryGenerator.generateInsertQueries(nodeAttributeMap);
             writeQueriesToFile(insertQueries, inputRDFFile);
+            int partitionSize =  (insertQueries.size()/PARTITION_UNIT) * PARTITION;
+            //System.out.println(partitionSize);
+            insertQueries = insertQueries.subList(0, partitionSize);
+
             Neo4jDao.batchInsert(insertQueries, inputRDFFile);
         }
         long endTime = System.currentTimeMillis();
@@ -122,6 +128,10 @@ public class RDFAppMain {
 
             List<String> relationQueries = QueryGenerator.generateQueriesForRelation(nodeRelationMap, nodeAttributesMap);
             writeQueriesToFile(relationQueries, inputRDFFile);
+            int partitionSize =  (int)(Math.ceil(((double)relationQueries.size())/PARTITION_UNIT)) * PARTITION;
+            //System.out.println(partitionSize + ":" + relationQueries.size());
+            relationQueries = relationQueries.subList(0, Math.min(partitionSize, relationQueries.size()));
+
             Neo4jDao.batchInsert(relationQueries, inputRDFFile);
         }
         long endTime = System.currentTimeMillis();
