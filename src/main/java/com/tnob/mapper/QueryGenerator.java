@@ -98,7 +98,10 @@ public class QueryGenerator {
             List<String> updateQueries = new ArrayList<>();
 
             for (String relationName : relationsMap.keySet()) {
-                updateQueries.add(generateRelationQuery(resourceURI, relationsMap, nodeType, relationName));
+                String objectResourceURI = relationsMap.get(relationName);
+                updateQueries.add(generateMergeQuery(resourceURI, nodeType));
+                updateQueries.add(generateMergeQuery(objectResourceURI, extractObjectNodeType(objectResourceURI)));
+                updateQueries.add(generateRelationQuery(resourceURI, nodeType, relationName, objectResourceURI));
             }
 
             StringBuilder queryBuilder = new StringBuilder("Match (node1:");
@@ -130,7 +133,7 @@ public class QueryGenerator {
             return Collections.EMPTY_LIST;
     }
 
-    private static String generateRelationQuery(String resourceURI, Map<String, String> relationsMap, String nodeType, String relationName) {
+    private static String generateRelationQuery(String resourceURI, String nodeType, String relationName, String objectResourceURI) {
         StringBuilder queryBuilder = new StringBuilder("Match (node1:");
 
         //generate portion for finding source node (i.e. the node from which the edge goes out)
@@ -144,13 +147,30 @@ public class QueryGenerator {
         queryBuilder.append(", (node2{")
                 .append(RDFConstants.URI)
                 .append(":")
-                .append(addQuotes(relationsMap.get(relationName)))
+                .append(addQuotes(objectResourceURI))
                 .append("})");
         //generate the actual relation creation query
         queryBuilder.append(" create (node1)-[r:")
                 .append(addTicks(relationName))
                 .append("]->(node2)")
                 .append(" return r;");
+        return queryBuilder.toString();
+    }
+
+    private static String generateMergeQuery(String resourceURI, String nodeType) {
+        StringBuilder queryBuilder = new StringBuilder("Merge (node1");
+
+        if(!nodeType.contains(".")) {
+            queryBuilder.append(":")
+                    .append(nodeType);
+        }
+
+        queryBuilder.append("{")
+                .append(RDFConstants.URI)
+                .append(":")
+                .append(addQuotes(resourceURI))
+                .append("}) return node1;");
+
         return queryBuilder.toString();
     }
 
@@ -161,6 +181,12 @@ public class QueryGenerator {
             relationAdditionQueryList.addAll(generateQueryForRelationAndAttributes(nodeRelationMapEntry, attributesMap));
         }
         return relationAdditionQueryList;
+    }
+
+    private static String extractObjectNodeType(String objectResourceURI) {
+        String[] splitObjectResourceURI = objectResourceURI.split("/");
+        String objectNodeType = splitObjectResourceURI[splitObjectResourceURI.length - 2];
+        return objectNodeType;
     }
 
 
