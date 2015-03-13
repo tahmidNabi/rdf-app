@@ -51,7 +51,7 @@ public class RDFNodeMapper extends RDFModelIterator{
             attributesMap.put(RDFConstants.LABEL, attributeValue);
         }
         else if (attributeName.equals(typePrefix)) {
-            String[] splitAttributeValue = attributeValue.split("/");
+            String[] splitAttributeValue = attributeValue.split("[/|#]");
             attributeValue = splitAttributeValue[splitAttributeValue.length - 1];
             attributesMap.put(RDFConstants.TYPE, attributeValue);
         } else {

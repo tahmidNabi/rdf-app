@@ -115,18 +115,22 @@ public class QueryGenerator {
                     .append("})")
                     .append(" set ");
 
-            for (String attributeName : attributesMap.keySet()) {
-                queryBuilder.append("node1.")
-                        .append(addTicks(attributeName))
-                        .append(" = ")
-                        .append(addQuotes(removeSpecialSubStrings(attributesMap.get(attributeName))))
-                        .append(" , ");
+            if (attributesMap != null) {
+
+                for (String attributeName : attributesMap.keySet()) {
+
+                    queryBuilder.append("node1.")
+                            .append(addTicks(attributeName))
+                            .append(" = ")
+                            .append(addQuotes(removeSpecialSubStrings(attributesMap.get(attributeName))))
+                            .append(" , ");
+                }
+                String attributeUpdateQuery = queryBuilder.toString();
+                attributeUpdateQuery = attributeUpdateQuery.substring(0, attributeUpdateQuery.length() - 2);
+
+
+                updateQueries.add(attributeUpdateQuery);
             }
-            String attributeUpdateQuery = queryBuilder.toString();
-            attributeUpdateQuery = attributeUpdateQuery.substring(0, attributeUpdateQuery.length() - 2);
-
-
-            updateQueries.add(attributeUpdateQuery);
             return updateQueries;
 
         } else
@@ -161,8 +165,12 @@ public class QueryGenerator {
         StringBuilder queryBuilder = new StringBuilder("Merge (node1");
 
         if(!nodeType.contains(".")) {
-            queryBuilder.append(":")
-                    .append(nodeType);
+            queryBuilder.append(":");
+            if (nodeType.contains("-")) {
+                queryBuilder.append(addTicks(nodeType));
+            } else {
+                queryBuilder.append(nodeType);
+            }
         }
 
         queryBuilder.append("{")
@@ -185,8 +193,12 @@ public class QueryGenerator {
 
     private static String extractObjectNodeType(String objectResourceURI) {
         String[] splitObjectResourceURI = objectResourceURI.split("/");
-        String objectNodeType = splitObjectResourceURI[splitObjectResourceURI.length - 2];
-        return objectNodeType;
+        if (splitObjectResourceURI.length > 1) {
+            String objectNodeType = splitObjectResourceURI[splitObjectResourceURI.length - 2];
+            return objectNodeType;
+        } else {
+            return splitObjectResourceURI[0];
+        }
     }
 
 
