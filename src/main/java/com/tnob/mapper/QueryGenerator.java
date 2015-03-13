@@ -96,10 +96,9 @@ public class QueryGenerator {
         String nodeType = relationsMap.remove(RDFConstants.TYPE);
         if (nodeType != null) {
             List<String> updateQueries = new ArrayList<>();
-
+            updateQueries.add(generateMergeQuery(resourceURI, nodeType));
             for (String relationName : relationsMap.keySet()) {
                 String objectResourceURI = relationsMap.get(relationName);
-                updateQueries.add(generateMergeQuery(resourceURI, nodeType));
                 updateQueries.add(generateMergeQuery(objectResourceURI, extractObjectNodeType(objectResourceURI)));
                 updateQueries.add(generateRelationQuery(resourceURI, nodeType, relationName, objectResourceURI));
             }

@@ -46,7 +46,7 @@ public class RDFNodeRelMapper extends RDFModelIterator{
                 nodeRelationMap.put(resourceURI, relationsMap);
             }
             if (attributeName.equals(typePrefix)) {
-                String[] splitAttributeValue = objectResourceUri.split("/");
+                String[] splitAttributeValue = objectResourceUri.split("[/|#]");
                 String rdfType = splitAttributeValue[splitAttributeValue.length - 1];
                 relationsMap.put(RDFConstants.TYPE, rdfType);
             } else {
@@ -75,7 +75,7 @@ public class RDFNodeRelMapper extends RDFModelIterator{
             attributesMap.put(RDFConstants.LABEL, attributeValue);
         }
         else if (attributeName.equals(typePrefix)) {
-            String[] splitAttributeValue = attributeValue.split("/");
+            String[] splitAttributeValue = attributeValue.split("[/|#]");
             attributeValue = splitAttributeValue[splitAttributeValue.length - 1];
             attributesMap.put(RDFConstants.TYPE, attributeValue);
         } else {
