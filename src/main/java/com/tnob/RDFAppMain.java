@@ -15,9 +15,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-/**
- * Hello world!
- */
 public class RDFAppMain {
 
     public static final String prefix = "http://data.linkedmdb.org/resource/movie";
@@ -29,11 +26,14 @@ public class RDFAppMain {
 
 
     public static void main(String[] args) {
-        //migrateRootNodes(INPUT_FOLDER_ROOT);
-        migrateRelations(INPUT_FOLDER_RELATIONS);
+        String neo4jURI = args[0];
+        String inputFolder = args[1];
+        String outputFolder = args[2];
+        //migrateRootNodes(INPUT_FOLDER_ROOT, QUERY_FOLDER);
+        migrateRelations(neo4jURI, inputFolder, outputFolder);
     }
 
-    private static void migrateRootNodes(String inputFolder) {
+    private static void migrateRootNodes(String neo4jURI, String inputFolder, String outputFolder) {
         List<String> rdfFiles = new ArrayList<>();
 
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(inputFolder))) {
@@ -50,7 +50,7 @@ public class RDFAppMain {
 
             Model model = ModelFactory.createDefaultModel();
 
-            InputStream in1 = FileManager.get().open(inputFolder + inputRDFFile);
+            InputStream in1 = FileManager.get().open(inputFolder + "/"  + inputRDFFile);
             if (in1 == null) {
                 throw new IllegalArgumentException("File: " + inputRDFFile + " not found");
             }
@@ -72,12 +72,12 @@ public class RDFAppMain {
             Map<String, Map<String, String>> nodeAttributeMap = rdfModelIterator.getNodeAttributeMap();
 
             List<String> insertQueries = QueryGenerator.generateInsertQueries(nodeAttributeMap);
-            writeQueriesToFile(insertQueries, inputRDFFile);
+            writeQueriesToFile(insertQueries, outputFolder, inputRDFFile);
             int partitionSize =  (insertQueries.size()/PARTITION_UNIT) * PARTITION;
             //System.out.println(partitionSize);
             insertQueries = insertQueries.subList(0, partitionSize);
 
-            Neo4jDao.batchInsert(insertQueries, inputRDFFile);
+            Neo4jDao.batchInsert(neo4jURI, insertQueries, inputRDFFile);
         }
         long endTime = System.currentTimeMillis();
 
@@ -86,7 +86,7 @@ public class RDFAppMain {
         System.out.println("Migration took " + timeForInsertion + " seconds");
     }
 
-    private static void migrateRelations(String inputFolder) {
+    private static void migrateRelations(String neo4jURI, String inputFolder, String outputFolder) {
         List<String> rdfFiles = new ArrayList<>();
 
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(inputFolder))) {
@@ -103,7 +103,7 @@ public class RDFAppMain {
 
             Model model = ModelFactory.createDefaultModel();
 
-            InputStream in1 = FileManager.get().open(inputFolder + inputRDFFile);
+            InputStream in1 = FileManager.get().open(inputFolder + "/" + inputRDFFile);
             if (in1 == null) {
                 throw new IllegalArgumentException("File: " + inputRDFFile + " not found");
             }
@@ -127,12 +127,12 @@ public class RDFAppMain {
 
 
             List<String> relationQueries = QueryGenerator.generateQueriesForRelation(nodeRelationMap, nodeAttributesMap);
-            writeQueriesToFile(relationQueries, inputRDFFile);
+            writeQueriesToFile(relationQueries, outputFolder, inputRDFFile);
             int partitionSize =  (int)(Math.ceil(((double)relationQueries.size())/PARTITION_UNIT)) * PARTITION;
             //System.out.println(partitionSize + ":" + relationQueries.size());
             //relationQueries = relationQueries.subList(0, Math.min(partitionSize, relationQueries.size()));
 
-            Neo4jDao.batchInsert(relationQueries, inputRDFFile);
+            Neo4jDao.batchInsert(neo4jURI, relationQueries, inputRDFFile);
         }
         long endTime = System.currentTimeMillis();
 
@@ -141,8 +141,8 @@ public class RDFAppMain {
         System.out.println("Migration took " + timeForInsertion + " seconds");
     }
 
-    private static void writeQueriesToFile(List<String> insertQueries, String inputRDFFile) {
-        Path queryFile = Paths.get(QUERY_FOLDER + inputRDFFile + "-cypher.txt");
+    private static void writeQueriesToFile(List<String> insertQueries, String outputFolder, String inputRDFFile) {
+        Path queryFile = Paths.get(outputFolder + "/" + inputRDFFile + "-cypher.txt");
         try {
             Files.write(queryFile, insertQueries, Charset.defaultCharset());
         } catch (IOException e) {

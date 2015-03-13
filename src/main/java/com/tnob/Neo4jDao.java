@@ -17,8 +17,8 @@ public class Neo4jDao {
 
     public static final String REST_URI = "http://localhost:7474/db/data";
 
-    public static void batchInsert(List<String> insertQueries, String rdfFileName) {
-        RestAPI graphDb = new RestAPIFacade(REST_URI);
+    public static void batchInsert(String neo4jURI, List<String> insertQueries, String rdfFileName) {
+        RestAPI graphDb = new RestAPIFacade(neo4jURI);
 
         QueryEngine engine = new RestCypherQueryEngine(graphDb);
 
